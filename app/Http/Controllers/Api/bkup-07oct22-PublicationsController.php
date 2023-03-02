@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+use App\Models\Department;
+use App\Models\HomeSetting;
+use App\Models\Testimonials;
+use App\Models\NewsEvents;
+use App\Models\Publications;
+use Log;
+use App\Classes\ErrorsClass;
+
+class PublicationsController extends Controller
+{
+	public function SavePublications(Request $request)
+    {
+    	try{
+    		$Publications = new Publications();
+    		$Publications['publications_title'] = $request->publications_title;
+    		$Publications['publications_desc'] = $request->publications_desc;
+    		$Publications['doctor_id'] = $request->doctor_id;
+    		if($request->file('publications_pic')){
+            	$file= $request->file('publications_pic');
+            	$filename= date('YmdHi').$file->getClientOriginalName();
+            	$file-> move(public_path('PublicationsImg'), $filename);
+            	$Publications['publications_pic']= $filename;
+        	}
+        	$save_data = $Publications->save();
+    		if($save_data){
+    			return response()->json(['status'=>true,'message'=>'Publications saved successfully!','error'=>'','data'=>''], 200);
+    		} else {
+    			return response()->json(['status'=>false,'message'=>'Publications not saved successfully','error'=>'','data'=>''], 200);
+    		}
+    	} catch(\Illuminate\Database\QueryException $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Sql query error','data'=>''], 401); 
+	    } catch(\Exception $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Undefined variable error','data'=>''], 401);
+	    }
+	}
+	public function GetAllPublications(Request $request)
+    {
+    	try{
+    		$publications_data = Publications::where('status', '1')->where('is_deleted', '0')->get();
+    		if($publications_data){
+    			return response()->json(['status'=>true,'message'=>'Publications Listings','error'=>'','data'=>$publications_data], 200);
+    		} else {
+    			return response()->json(['status'=>false,'message'=>'No result Found of Publications','error'=>'','data'=>''], 200);
+    		}
+    	} catch(\Illuminate\Database\QueryException $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Sql query error','data'=>''], 401); 
+	    } catch(\Exception $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Undefined variable error','data'=>''], 401);
+	    }
+	}
+	public function GetSinglePublications(Request $request, $id)
+    {
+    	try{
+    		$single_publications_data = Publications::where('id', $id)->where('status', '1')->where('is_deleted', '0')->first();
+    		if($single_publications_data){
+    			return response()->json(['status'=>true,'message'=>'Publications Listings','error'=>'','data'=>$single_publications_data], 200);
+    		} else {
+    			return response()->json(['status'=>false,'message'=>'No result Found of Publications','error'=>'','data'=>''], 200);
+    		}
+    	} catch(\Illuminate\Database\QueryException $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Sql query error','data'=>''], 401); 
+	    } catch(\Exception $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Undefined variable error','data'=>''], 401);
+	    }
+	}
+	public function UpdatePublications(Request $request, $id)
+    {
+    	try{
+    		$Publications = Publications::find($id);
+	        $Publications['publications_title'] = $request->input('edit_publications_title');
+	        $Publications['publications_desc'] = $request->input('edit_publications_desc');
+	        if($request->file('edit_publications_pic')){
+            	$file= $request->file('edit_publications_pic');
+            	$filename= date('YmdHi').$file->getClientOriginalName();
+            	$file-> move(public_path('PublicationsImg'), $filename);
+            	$Publications['publications_pic']= $filename;
+        	}
+	        $update_data = $Publications->update();
+    		if($update_data){
+    			return response()->json(['status'=>true,'message'=>'Publications updated successfully!','error'=>'','data'=>''], 200);
+    		} else {
+    			return response()->json(['status'=>false,'message'=>'Publications not updated successfully','error'=>'','data'=>''], 200);
+    		}
+    	} catch(\Illuminate\Database\QueryException $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Sql query error','data'=>''], 401); 
+	    } catch(\Exception $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Undefined variable error','data'=>''], 401);
+	    }
+	}
+	public function deletePublications(Request $request, $id)
+    {
+    	try{
+    		$delete_publications_data = Publications::where('id', $id)->update(['status' => '0', 'is_deleted' => '1']);
+    		if($delete_publications_data){
+    			return response()->json(['status'=>true,'message'=>'Publications deleted successfully!','error'=>'','data'=>''], 200);
+    		} else {
+    			return response()->json(['status'=>false,'message'=>'Publications not deleted successfully!','error'=>'','data'=>''], 200);
+    		}
+    	} catch(\Illuminate\Database\QueryException $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Sql query error','data'=>''], 401); 
+	    } catch(\Exception $e) {
+	      	$errorClass = new ErrorsClass();
+	      	$errors = $errorClass->saveErrors($e);
+	      	return response()->json(['status'=>false,'message'=>'','error'=>'Undefined variable error','data'=>''], 401);
+	    }
+	}
+}
