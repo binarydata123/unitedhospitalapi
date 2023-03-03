@@ -8,6 +8,7 @@ use DB;
 use  App\Models\BodyPart;
 use App\Models\BodyLinkDept;
 use App\Models\Department;
+use App\Classes\ErrorsClass;
 class BodyPartsDepartController extends Controller
 {
     /**
@@ -16,8 +17,8 @@ class BodyPartsDepartController extends Controller
     public function getAllBodyLink()
     {
         try{
-    		$bodyDept_data = BodyLinkDept::select('department.id as department_id','body_link_dept.id as id','body_part.*','department.department_name')->join('department', 'body_link_dept.dept_id', '=', 'department.id')->join('body_part', 'body_link_dept.bodypart_id', '=', 'body_part.bodypart_id')->where(['body_link_dept.is_deleted'=>'0'])->orderBy('body_link_dept.id', 'DESC')->paginate(10);
-            // dd($bodyDept_data);
+    		$bodyDept_data = BodyLinkDept::select('department.dept_id as department_id','body_link_dept.id as body_link_dept_id','body_part.*','department.department_name')->join('department', 'body_link_dept.dept_id', '=', 'department.dept_id')->join('body_part', 'body_link_dept.bodypart_id', '=', 'body_part.id')->where(['body_link_dept.is_deleted'=>'0'])->orderBy('body_link_dept.id', 'DESC')->paginate(10);
+            //dd($bodyDept_data);
 			if($bodyDept_data){
     			return response()->json(['status'=>true,'message'=>'Body Parts Listings','error'=>'','data'=>$bodyDept_data], 200);
     		} else {
@@ -59,7 +60,16 @@ class BodyPartsDepartController extends Controller
     public function CreateBodyParts(Request $request)
     {
     	try{
-			$department=Department::where(['department_name'=>$request->department_name])->doesntExist();
+    		$bodyparts = new BodyLinkdept();
+		   	$bodyparts->dept_id = $request->department_id;
+		   	$bodyparts->bodypart_id=$request->body_part;
+		   	$save_data = $bodyparts->save();
+		   	if($save_data){
+			   	return response()->json(['status'=>true,'message'=>'Body Link created successfully!','error'=>'','data'=>$save_data], 200);
+		   	} else {
+			   return response()->json(['status'=>false,'message'=>'Body Link not created successfully!','error'=>'','data'=>''], 200);
+		   	}
+			/*$department=Department::where(['department_name'=>$request->department_name])->doesntExist();
 			if($department)
 			{
 				$Input['department_name']= $request->department_name;
@@ -81,7 +91,7 @@ class BodyPartsDepartController extends Controller
 				   	// }
 			}else{
 				return response()->json(['status'=>false,'message'=>'','error'=>'Department must be unique.','data'=>''], 200);
-			}	
+			}*/	
     	} catch(\Illuminate\Database\QueryException $e) {
 	      	$errorClass = new ErrorsClass();
 	      	$errors = $errorClass->saveErrors($e);
@@ -99,7 +109,7 @@ class BodyPartsDepartController extends Controller
     {
     	try{
     		$id = $request->id;
-    		$delete_data = BodyLinkDept::where('id', $id)->update(['is_deleted' => '1']);
+    		$delete_data = BodyLinkDept::where('id', $id)->update(['status' => '0', 'is_deleted' => '1']);
     		if($delete_data){
     			return response()->json(['status'=>true,'message'=>'Body Link Parts deleted successfully!','error'=>'','data'=>''], 200);
     		} else {
@@ -120,8 +130,8 @@ class BodyPartsDepartController extends Controller
      */
 	public function EditBodyLink(Request $request,$id){
 		try{
-			$bodyDept_data = BodyLinkDept::select('department.id as department_id','body_link_dept.id as id','body_part.*','department.department_name')->join('department', 'body_link_dept.dept_id', '=', 'department.id')->join('body_part', 'body_link_dept.bodypart_id', '=', 'body_part.bodypart_id')->where(['body_link_dept.is_deleted'=>'0'])->orderBy('body_link_dept.id', 'DESC')->first();
-			$bodyparts_data = BodyPart::select('bodypart_id','bodypart_name')->where(['gender'=>$bodyDept_data->gender])->get();
+			$bodyDept_data = BodyLinkDept::select('department.dept_id as department_id','body_link_dept.id as body_link_dept_id','body_part.*','department.department_name')->join('department', 'body_link_dept.dept_id', '=', 'department.dept_id')->join('body_part', 'body_link_dept.bodypart_id', '=', 'body_part.id')->where('body_link_dept.id', $id)->where(['body_link_dept.is_deleted'=>'0'])->orderBy('body_link_dept.id', 'DESC')->first();
+			$bodyparts_data = BodyPart::select('id','bodypart_name')->where(['gender'=>$bodyDept_data->gender])->get();
 			if($bodyDept_data){
     			return response()->json(['status'=>true,'message'=>'Body link data fetched successfully!','error'=>'','data'=>$bodyDept_data,'bodypart'=>$bodyparts_data], 200);
     		} else {
@@ -143,7 +153,13 @@ class BodyPartsDepartController extends Controller
     public function UpdateBodyLink(Request $request, $id)
     {
     	try{
-    		$bodylink = BodyLinkDept::find($id);
+    		$update_data = BodyLinkDept::where('id', $id)->update(['bodypart_id'=>$request->edit_body_part_id,'dept_id'=>$request->edit_department_id]);
+    		if($update_data){
+    			return response()->json(['status'=>true,'message'=>'Body link data updated successfully!','error'=>'','data'=>$update_data], 200);
+    		} else {
+    			return response()->json(['status'=>false,'message'=>'Body link data not updated successfully!','error'=>'','data'=>''], 200);
+    		}
+    		/*$bodylink = BodyLinkDept::find($id);
     		
 			$dept_data=Department::where('id',$bodylink->dept_id);
 			$dept_data->update(['department_name'=>$request->edit_department_name]);
@@ -155,7 +171,7 @@ class BodyPartsDepartController extends Controller
     			return response()->json(['status'=>true,'message'=>'Body link data updated successfully!','error'=>'','data'=>$update_data], 200);
     		} else {
     			return response()->json(['status'=>false,'message'=>'Body link data not updated successfully!','error'=>'','data'=>''], 200);
-    		}
+    		}*/
     	} catch(\Illuminate\Database\QueryException $e) {
 	      	$errorClass = new ErrorsClass();
 	      	$errors = $errorClass->saveErrors($e);
@@ -173,7 +189,7 @@ class BodyPartsDepartController extends Controller
     {
     	try{
     	    
-			$bodyDept_data = BodyLinkDept::select('department.id as department_id','body_link_dept.id as body_link_dept_id','body_part.*','department.department_name')->join('department', 'body_link_dept.dept_id', '=', 'department.id')->join('body_part', 'body_link_dept.bodypart_id', '=', 'body_part.bodypart_id')->where(['body_link_dept.is_deleted'=>'0'])->orderBy('body_link_dept.id', 'DESC')->first();
+			$bodyDept_data = BodyLinkDept::select('department.dept_id as department_id','body_link_dept.id as body_link_dept_id','body_part.*','department.department_name')->join('department', 'body_link_dept.dept_id', '=', 'department.dept_id')->join('body_part', 'body_link_dept.bodypart_id', '=', 'body_part.id')->where(['body_link_dept.is_deleted'=>'0'])->orderBy('body_link_dept.id', 'DESC')->first();
     		if($bodyDept_data){
     			return response()->json(['status'=>true,'message'=>'Body Link Department Listings','error'=>'','data'=>$bodyDept_data], 200);
     		} else {
